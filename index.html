@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="apple-mobile-web-app-title" content="FinanceFlow"/>
-<link rel="manifest" href="manifest.json"/>
+<link rel="manifest" href="/financeflow/manifest.json"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet"/>
 <title>FinanceFlow</title>
@@ -2595,7 +2595,7 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
 // INIT
 // ════════════════════════════════════════
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js').catch(() => {});
+  navigator.serviceWorker.register('/financeflow/sw.js').catch(() => {});
 }
 
 // Initialize
