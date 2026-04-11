@@ -2406,7 +2406,7 @@ function openPhotoForItem(type, mk, country, tab, idx) {
     ? state.budget[mk][country].card[idx]
     : state.budget[mk][country][tab][idx];
   if (!item) return;
-  _photoContext = { type, mk, country, tab, idx };
+  _photoContext = { type: type, mk: mk, country: country, tab: tab, idx: idx };
   if (item.photo) {
     document.getElementById('photo-viewer-img').src = item.photo;
     document.getElementById('modal-photo-viewer').classList.add('open');
@@ -2436,14 +2436,19 @@ function openPhotoForItem(type, mk, country, tab, idx) {
 }
 
 function deleteItemPhoto() {
-  if (!_photoContext) return;
+  if (!_photoContext) { closeModal('modal-photo-viewer'); return; }
   var ctx = _photoContext;
-  var item = ctx.type === 'card'
-    ? state.budget[ctx.mk][ctx.country].card[ctx.idx]
-    : state.budget[ctx.mk][ctx.country][ctx.tab][ctx.idx];
-  if (item) { delete item.photo; saveData(); renderBudgetList(); }
+  var bud = state.budget[ctx.mk];
+  if (!bud || !bud[ctx.country]) { closeModal('modal-photo-viewer'); return; }
+  var arr = ctx.type === 'card' ? bud[ctx.country].card : bud[ctx.country][ctx.tab];
+  var item = arr ? arr[ctx.idx] : null;
+  if (item) {
+    delete item.photo;
+    saveData();
+    renderBudgetList();
+    showToast(lang === 'pt' ? 'Foto removida' : 'Photo removed');
+  }
   closeModal('modal-photo-viewer');
-  showToast('Foto removida');
   _photoContext = null;
 }
 
