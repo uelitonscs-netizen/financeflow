@@ -1171,6 +1171,19 @@ select option { background: var(--bg2); }
   </div>
 </div>
 
+<!-- PHOTO VIEWER MODAL -->
+<div class="modal-overlay" id="modal-photo-viewer" style="background:rgba(0,0,0,0.95); align-items:center; justify-content:center;">
+  <div style="position:relative; width:100%; max-width:500px; padding:16px;">
+    <button onclick="closeModal('modal-photo-viewer')" style="position:absolute; top:0; right:16px; background:rgba(255,255,255,0.15); border:none; color:#fff; border-radius:50%; width:36px; height:36px; font-size:1.2rem; cursor:pointer; z-index:10;">&#x2715;</button>
+    <img id="photo-viewer-img" src="" style="width:100%; border-radius:12px; max-height:80dvh; object-fit:contain;" />
+    <div style="text-align:center; margin-top:10px;">
+      <button onclick="deleteItemPhoto()" style="background:rgba(239,68,68,0.2); border:1px solid var(--red); color:var(--red); border-radius:8px; padding:6px 16px; cursor:pointer; font-size:0.78rem;">
+        &#x1F5D1; <span data-pt="Remover foto" data-en="Remove photo">Remover foto</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -1728,6 +1741,7 @@ function renderBudgetList() {
         <div>
           <div class="list-value" style="color:${cat.color}">${sym}${actual.toLocaleString(loc,{minimumFractionDigits:0,maximumFractionDigits:0})}</div>
         </div>
+        <button class="btn-icon" data-photo-type="budget" data-photo-mk="${mk}" data-photo-country="${budgetCountry}" data-photo-tab="${budgetTab}" data-photo-idx="${i}" onclick="handlePhotoClick(this)" style="opacity:${item.photo?'1':'0.35'};" title="Recibo">${item.photo?'🧾':'📎'}</button>
         <button class="btn-icon" onclick="editBudgetItem(${i})">✏️</button>
         <button class="btn-icon" onclick="deleteBudgetItem(${i})">🗑️</button>
       </div>
@@ -1794,6 +1808,7 @@ function renderCardList(mk, el) {
           <div class="list-change" style="color:var(--text3);">${isSingle ? '' : `R$ ${perInst.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0})}/x`}</div>
         </div>
         ${!isSingle && remaining > 0 ? `<button class="btn btn-secondary btn-sm" onclick="payInstallment(${i})" title="${lang==='pt'?'Marcar parcela paga':'Mark installment paid'}" style="padding:5px 8px;">✓</button>` : ''}
+        <button class="btn-icon" data-photo-type="card" data-photo-mk="${mk}" data-photo-country="br" data-photo-tab="card" data-photo-idx="${i}" onclick="handlePhotoClick(this)" style="opacity:${item.photo?'1':'0.35'};" title="Recibo">${item.photo?'🧾':'📎'}</button>
         <button class="btn-icon" onclick="editCardItem(${i})">✏️</button>
         <button class="btn-icon" onclick="deleteCardItem(${i})">🗑️</button>
       </div>
@@ -2372,6 +2387,64 @@ function executeCopyMonth() {
   showToast(lang==='pt'
     ? `✅ Dados copiados para ${monthDisplay(toMk)}!`
     : `✅ Data copied to ${monthDisplay(toMk)}!`);
+}
+
+// ── PHOTO RECEIPT FUNCTIONS ──
+var _photoContext = null; // { type:'budget'|'card', mk, country, tab, idx }
+
+function handlePhotoClick(btn) {
+  var type    = btn.getAttribute('data-photo-type');
+  var mk      = btn.getAttribute('data-photo-mk');
+  var country = btn.getAttribute('data-photo-country');
+  var tab     = btn.getAttribute('data-photo-tab');
+  var idx     = parseInt(btn.getAttribute('data-photo-idx'));
+  openPhotoForItem(type, mk, country, tab, idx);
+}
+
+function openPhotoForItem(type, mk, country, tab, idx) {
+  var item = type === 'card'
+    ? state.budget[mk][country].card[idx]
+    : state.budget[mk][country][tab][idx];
+  if (!item) return;
+  _photoContext = { type, mk, country, tab, idx };
+  if (item.photo) {
+    document.getElementById('photo-viewer-img').src = item.photo;
+    document.getElementById('modal-photo-viewer').classList.add('open');
+  } else {
+    // Open file picker
+    var inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = 'image/*';
+    inp.onchange = function(e) {
+      var file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Foto muito grande (max 2MB)');
+        return;
+      }
+      var reader = new FileReader();
+      reader.onload = function(ev) {
+        item.photo = ev.target.result;
+        saveData();
+        renderBudgetList();
+        showToast('Foto salva! ✅');
+      };
+      reader.readAsDataURL(file);
+    };
+    inp.click();
+  }
+}
+
+function deleteItemPhoto() {
+  if (!_photoContext) return;
+  var ctx = _photoContext;
+  var item = ctx.type === 'card'
+    ? state.budget[ctx.mk][ctx.country].card[ctx.idx]
+    : state.budget[ctx.mk][ctx.country][ctx.tab][ctx.idx];
+  if (item) { delete item.photo; saveData(); renderBudgetList(); }
+  closeModal('modal-photo-viewer');
+  showToast('Foto removida');
+  _photoContext = null;
 }
 
 function quickSaveHistory() {
